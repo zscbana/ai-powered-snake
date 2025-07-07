@@ -1,9 +1,11 @@
 import pygame
 import random
 import sys
+import numpy as np
 
 # Initialize Pygame
 pygame.init()
+pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
 
 # Game constants
 WINDOW_WIDTH = 800
@@ -104,7 +106,79 @@ class Game:
         self.font_tiny = pygame.font.Font(None, 20)
         self.game_state = "start_menu"  # start_menu, intro, playing, game_over
         self.intro_timer = 0
+        self.load_sounds()
         self.reset_game()
+    
+    def load_sounds(self):
+        """Load or generate sound effects"""
+        try:
+            # Try to load sound files if they exist
+            self.eat_sound = pygame.mixer.Sound("eat.wav")
+            self.game_over_sound = pygame.mixer.Sound("game_over.wav")
+            self.menu_sound = pygame.mixer.Sound("menu.wav")
+        except (pygame.error, FileNotFoundError):
+            # Generate synthetic sounds if files don't exist
+            self.eat_sound = self.generate_eat_sound()
+            self.game_over_sound = self.generate_game_over_sound()
+            self.menu_sound = self.generate_menu_sound()
+    
+    def generate_eat_sound(self):
+        """Generate a synthetic eating sound"""
+        duration = 0.1
+        sample_rate = 22050
+        frames = int(duration * sample_rate)
+        
+        # Create a pleasant eating sound
+        t = np.linspace(0, duration, frames, False)
+        frequency = 800
+        # Create a simple sine wave with decay
+        wave = np.sin(frequency * 2 * np.pi * t) * np.exp(-t * 10)
+        # Convert to 16-bit integers
+        wave = (wave * 32767).astype(np.int16)
+        # Make stereo and ensure C-contiguous
+        stereo_wave = np.column_stack((wave, wave)).astype(np.int16)
+        stereo_wave = np.ascontiguousarray(stereo_wave)
+        
+        sound = pygame.sndarray.make_sound(stereo_wave)
+        return sound
+    
+    def generate_game_over_sound(self):
+        """Generate a synthetic game over sound"""
+        duration = 0.5
+        sample_rate = 22050
+        frames = int(duration * sample_rate)
+        
+        # Create a descending game over sound
+        t = np.linspace(0, duration, frames, False)
+        frequency = 400 - 300 * t / duration  # Descending from 400Hz to 100Hz
+        wave = np.sin(frequency * 2 * np.pi * t) * np.exp(-t * 2)
+        # Convert to 16-bit integers
+        wave = (wave * 32767).astype(np.int16)
+        # Make stereo and ensure C-contiguous
+        stereo_wave = np.column_stack((wave, wave)).astype(np.int16)
+        stereo_wave = np.ascontiguousarray(stereo_wave)
+        
+        sound = pygame.sndarray.make_sound(stereo_wave)
+        return sound
+    
+    def generate_menu_sound(self):
+        """Generate a synthetic menu selection sound"""
+        duration = 0.05
+        sample_rate = 22050
+        frames = int(duration * sample_rate)
+        
+        # Create a short click sound
+        t = np.linspace(0, duration, frames, False)
+        frequency = 1200
+        wave = np.sin(frequency * 2 * np.pi * t) * np.exp(-t * 20)
+        # Convert to 16-bit integers
+        wave = (wave * 32767).astype(np.int16)
+        # Make stereo and ensure C-contiguous
+        stereo_wave = np.column_stack((wave, wave)).astype(np.int16)
+        stereo_wave = np.ascontiguousarray(stereo_wave)
+        
+        sound = pygame.sndarray.make_sound(stereo_wave)
+        return sound
     
     def reset_game(self):
         self.snake = Snake()
@@ -330,11 +404,13 @@ class Game:
                 
                 if self.game_state == "start_menu":
                     if event.key == pygame.K_SPACE:
+                        self.menu_sound.play()
                         self.game_state = "intro"
                         self.intro_timer = 0
                 
                 elif self.game_state == "intro":
                     # Skip intro with any key
+                    self.menu_sound.play()
                     self.game_state = "playing"
                     self.intro_timer = 0
                 
@@ -351,9 +427,11 @@ class Game:
                             self.snake.change_direction((CELL_SIZE, 0))
                     else:
                         if event.key == pygame.K_SPACE:
+                            self.menu_sound.play()
                             self.reset_game()
                             self.game_state = "intro"
                         elif event.key == pygame.K_m:
+                            self.menu_sound.play()
                             self.game_state = "start_menu"
         
         return True
@@ -366,6 +444,7 @@ class Game:
             if self.snake.positions[0] == self.food.position:
                 self.score += 10
                 self.snake.grow = True
+                self.eat_sound.play()  # Play eating sound
                 self.food.position = self.food.generate_position()
                 
                 # Make sure food doesn't spawn on snake
@@ -375,6 +454,7 @@ class Game:
             # Check collisions
             if self.snake.check_collision():
                 self.game_over = True
+                self.game_over_sound.play()  # Play game over sound
     
     def draw(self):
         if self.game_state == "start_menu":

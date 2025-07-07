@@ -8,6 +8,7 @@ A classic Snake game with a retro neon arcade aesthetic built with Python and Py
 - **Animated Intro**: "Get Ready" sequence with countdown before gameplay
 - **Classic Snake Gameplay**: Control a snake that grows as it eats food
 - **Neon Arcade Styling**: Bright blue and pink colors with glowing effects
+- **Sound Effects**: Eating sounds, game over audio, and menu interaction sounds
 - **Collision Detection**: Game ends when hitting walls or the snake's own body
 - **Scoring System**: Earn 10 points for each food item consumed
 - **Game Over Screen**: Shows final score with restart and menu options
